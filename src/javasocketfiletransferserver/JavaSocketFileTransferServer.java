@@ -79,8 +79,13 @@ public class JavaSocketFileTransferServer {
                     byte[] buffer = new byte[1024];
                     try {
                         FileInputStream fileInputStream = new FileInputStream(fileName);
-                        while ((count = fileInputStream.read(buffer)) > 0) {
-                            outStream.write(buffer, 0, count);
+                        try {
+                            while ((count = fileInputStream.read(buffer)) > 0) {
+                                outStream.write(buffer, 0, count);
+                            }
+                        } catch (IOException ex) {
+                            System.out.println(ex);
+                            System.exit(1);
                         }
                     } catch (FileNotFoundException ex) {
                         // Show message that the file isn't found
