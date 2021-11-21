@@ -33,69 +33,71 @@ public class JavaSocketFileTransferServer {
     public static void main(String[] args) {
         try ( ServerSocket serverSocket = new ServerSocket(1234)) { // server is on port 1234
             System.out.println("Server is listening on port #" + serverSocket.getLocalPort());
-            try ( Socket clientSocket = serverSocket.accept()) { // wait, listen and accept connection
-                String clientHostName = clientSocket.getInetAddress().getHostName(); // client name
-                int clientPortNumber = clientSocket.getLocalPort(); // port used
-                System.out.println("Connected from " + clientHostName + " on #" + clientPortNumber);
+            while (true) {
+                try ( Socket clientSocket = serverSocket.accept()) { // wait, listen and accept connection
+                    String clientHostName = clientSocket.getInetAddress().getHostName(); // client name
+                    int clientPortNumber = clientSocket.getLocalPort(); // port used
+                    System.out.println("Connected from " + clientHostName + " on #" + clientPortNumber);
 
-                DataInputStream inStream;
-                inStream = new DataInputStream(clientSocket.getInputStream());
+                    DataInputStream inStream;
+                    inStream = new DataInputStream(clientSocket.getInputStream());
 
-                DataOutputStream outStream; // output stream to client
-                outStream = new DataOutputStream(clientSocket.getOutputStream());
+                    DataOutputStream outStream; // output stream to client
+                    outStream = new DataOutputStream(clientSocket.getOutputStream());
 
-                String fileName = "";
-                boolean commandUpload = false;
+                    String fileName = "";
+                    boolean commandUpload = false;
 
-                try {
-                    commandUpload = inStream.readBoolean();
-                    fileName = inStream.readUTF();
-                    System.out.println("upload: " + commandUpload);
-                    System.out.println("file: " + fileName);
-
-                } catch (IOException ex) {
-                    System.out.println(ex);
-                    System.exit(1);
-                }
-
-                if (commandUpload) {
-                    System.out.println("Trying receiving <upload>");
-                    FileOutputStream fileOutputStream = new FileOutputStream(fileName);
-                    int count = 0;
-                    byte[] buffer = new byte[8];
                     try {
-                        while ((count = inStream.read(buffer)) > 0) {
-                            fileOutputStream.write(buffer, 0, count);
-                        }
+                        commandUpload = inStream.readBoolean();
+                        fileName = inStream.readUTF();
+                        System.out.println("upload: " + commandUpload);
+                        System.out.println("file: " + fileName);
+
                     } catch (IOException ex) {
                         System.out.println(ex);
                         System.exit(1);
                     }
-                    fileOutputStream.flush();
-                    fileOutputStream.close();
-                } else {
-                    System.out.println("Trying sending <download>");
-                    int count;
-                    byte[] buffer = new byte[1024];
-                    try {
-                        FileInputStream fileInputStream = new FileInputStream(fileName);
+
+                    if (commandUpload) {
+                        System.out.println("Trying receiving <upload>");
+                        FileOutputStream fileOutputStream = new FileOutputStream(fileName);
+                        int count = 0;
+                        byte[] buffer = new byte[8];
                         try {
-                            while ((count = fileInputStream.read(buffer)) > 0) {
-                                outStream.write(buffer, 0, count);
+                            while ((count = inStream.read(buffer)) > 0) {
+                                fileOutputStream.write(buffer, 0, count);
                             }
                         } catch (IOException ex) {
                             System.out.println(ex);
                             System.exit(1);
                         }
-                    } catch (FileNotFoundException ex) {
-                        // Show message that the file isn't found
-                        System.out.println(ex);
-                        System.exit(1);
+                        fileOutputStream.flush();
+                        fileOutputStream.close();
+                    } else {
+                        System.out.println("Trying sending <download>");
+                        int count;
+                        byte[] buffer = new byte[1024];
+                        try {
+                            FileInputStream fileInputStream = new FileInputStream(fileName);
+                            try {
+                                while ((count = fileInputStream.read(buffer)) > 0) {
+                                    outStream.write(buffer, 0, count);
+                                }
+                            } catch (IOException ex) {
+                                System.out.println(ex);
+                                System.exit(1);
+                            }
+                        } catch (FileNotFoundException ex) {
+                            // Show message that the file isn't found
+                            System.out.println(ex);
+                            System.exit(1);
+                        }
                     }
-                }
 
-                inStream.close();
-                outStream.close();
+                    inStream.close();
+                    outStream.close();
+                }
             }
         } catch (IOException e) {
             System.err.println("IOException occurred" + e);
