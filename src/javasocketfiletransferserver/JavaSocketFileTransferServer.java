@@ -6,7 +6,11 @@
 package javasocketfiletransferserver;
 
 import java.io.BufferedReader;
+import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.ServerSocket;
@@ -34,28 +38,64 @@ public class JavaSocketFileTransferServer {
                 int clientPortNumber = clientSocket.getLocalPort(); // port used
                 System.out.println("Connected from " + clientHostName + " on #" + clientPortNumber);
 
-                BufferedReader inStream; // input stream from client
-                inStream = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+                DataInputStream inStream;
+                inStream = new DataInputStream(clientSocket.getInputStream());
 
                 DataOutputStream outStream; // output stream to client
                 outStream = new DataOutputStream(clientSocket.getOutputStream());
 
-                while (true) { // chatting loop
-                    String inLine = inStream.readLine(); // read a line from client
-                    System.out.println("Received from client: " + inLine);
+                String fileName = "";
+                boolean commandUpload = false;
 
-                    // if the client sends "quit", then stop
-                    if (inLine.equalsIgnoreCase("quit")) {
-                        System.out.println("Client Disconnected!!!");
-                        break; // disconnect
-                    }
+                try {
+                    commandUpload = inStream.readBoolean();
+                    fileName = inStream.readUTF();
+                    System.out.println("upload: " + commandUpload);
+                    System.out.println("file: " + fileName);
 
-                    String outLine = "You said '" + inLine + "'.";
-                    outStream.writeBytes(outLine); // send a message to client
-                    outStream.write(13); // carriage return
-                    outStream.write(10); // line feed
-                    outStream.flush(); // flush the stream line
+                } catch (IOException ex) {
+                    System.out.println(ex);
+                    System.exit(1);
                 }
+
+                if (commandUpload) {
+                    System.out.println("Trying receiving <upload>");
+                    try {
+                        FileOutputStream fileOutputStream = new FileOutputStream(fileName);
+                        int count = 0;
+                        byte[] buffer = new byte[8];
+                        try {
+                            while ((count = inStream.read(buffer)) > 0) {
+                                fileOutputStream.write(buffer, 0, count);
+                            }
+                        } catch (IOException ex) {
+                            System.out.println(ex);
+                            System.exit(1);
+                        }
+                        fileOutputStream.flush();
+                        fileOutputStream.close();
+
+                    } catch (FileNotFoundException ex) {
+                        // Show message that the file isn't found
+                        System.out.println(ex);
+                        System.exit(1);
+                    }
+                } else {
+                    System.out.println("Trying sending <download>");
+                    int count;
+                    byte[] buffer = new byte[1024];
+                    try {
+                        FileInputStream fileInputStream = new FileInputStream(fileName);
+                        while ((count = fileInputStream.read(buffer)) > 0) {
+                            outStream.write(buffer, 0, count);
+                        }
+                    } catch (FileNotFoundException ex) {
+                        // Show message that the file isn't found
+                        System.out.println(ex);
+                        System.exit(1);
+                    }
+                }
+
                 inStream.close();
                 outStream.close();
             }
