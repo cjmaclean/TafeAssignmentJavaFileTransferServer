@@ -60,26 +60,19 @@ public class JavaSocketFileTransferServer {
 
                 if (commandUpload) {
                     System.out.println("Trying receiving <upload>");
+                    FileOutputStream fileOutputStream = new FileOutputStream(fileName);
+                    int count = 0;
+                    byte[] buffer = new byte[8];
                     try {
-                        FileOutputStream fileOutputStream = new FileOutputStream(fileName);
-                        int count = 0;
-                        byte[] buffer = new byte[8];
-                        try {
-                            while ((count = inStream.read(buffer)) > 0) {
-                                fileOutputStream.write(buffer, 0, count);
-                            }
-                        } catch (IOException ex) {
-                            System.out.println(ex);
-                            System.exit(1);
+                        while ((count = inStream.read(buffer)) > 0) {
+                            fileOutputStream.write(buffer, 0, count);
                         }
-                        fileOutputStream.flush();
-                        fileOutputStream.close();
-
-                    } catch (FileNotFoundException ex) {
-                        // Show message that the file isn't found
+                    } catch (IOException ex) {
                         System.out.println(ex);
                         System.exit(1);
                     }
+                    fileOutputStream.flush();
+                    fileOutputStream.close();
                 } else {
                     System.out.println("Trying sending <download>");
                     int count;
